@@ -1,9 +1,7 @@
 /* Fullbright College Equipment Borrowing System */
 const SUPABASE_URL = 'https://uaxfzmtpjcfwfoqhgfih.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_hsippBvYrIczvzTtI8cR2A_dV6eqcUj';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
-});
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const MAX_BORROW_DAYS = 7;
 const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
 let me=null, profile=null, charts=[];
@@ -77,7 +75,8 @@ async function sendPasswordReset(source = 'profile') {
     email = user.email;
   }
 
-  const redirectTo = new URL('/reset-password.html', window.location.origin).toString();
+  const redirectTo =
+    `${window.location.origin}/reset-password.html`;
 
   const { error } = await sb.auth.resetPasswordForEmail(
     email,
@@ -120,20 +119,7 @@ function showPasswordRecoveryForm(){
 $('#logout').onclick=async()=>{await sb.auth.signOut();me=null;profile=null;showAuth()};
 $$('.nav').forEach(b=>b.onclick=()=>{$$('.nav').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#notificationPanel').classList.add('hidden');loadPage(b.dataset.page)});
 $('#notificationBtn').onclick=()=>{const panel=$('#notificationPanel');panel.classList.toggle('hidden');$('#notificationBtn').setAttribute('aria-expanded',String(!panel.classList.contains('hidden')))};
-sb.auth.onAuthStateChange(async (event) => {
-  if (event === 'PASSWORD_RECOVERY') {
-    // Recovery links sometimes land on /# instead of the standalone page because
-    // of an old Supabase redirect setting. Move the recovery session to the page.
-    const target = new URL('/reset-password.html', window.location.origin);
-    target.search = window.location.search;
-    target.hash = window.location.hash;
-    if (window.location.pathname !== '/reset-password.html') {
-      window.location.replace(target.toString());
-    }
-    return;
-  }
-  if (me === null) await start();
-});
+sb.auth.onAuthStateChange(async(event)=>{if(event==='PASSWORD_RECOVERY'){showPasswordRecoveryForm();return}if(me===null)await start()});
 async function start(){try{await getProfile();if(profile)showApp();else showAuth()}catch(e){showAuth();toast(e.message,true)}}
 
 async function loadPage(page){
@@ -274,7 +260,7 @@ function downloadCSV(filename,rows){const csv=rows.map(row=>row.map(csvEscape).j
 function exportReportCSV(kind){const d=window.__filteredReportData||window.__reportData||{};if(kind==='inventory'){const rows=[['Asset Tag','Equipment','Category','Brand','Model','Availability','Condition','Replacement Cost']];(d.inv||[]).forEach(x=>rows.push([x.asset_tag,x.equipment_name,x.category_name,x.brand,x.model,x.availability_status,x.condition_status,x.replacement_cost]));downloadCSV('fullbright-inventory-'+today()+'.csv',rows)}else{const rows=[['Borrowing ID','Borrower','Employee No','Purpose','Borrow Date','Expected Return','Calculated Status','Days Overdue','Remarks']];(d.borrowings||[]).forEach(x=>rows.push([x.borrowing_id,[x.borrower?.first_name,x.borrower?.last_name].filter(Boolean).join(' '),x.borrower?.employee_no,x.purpose,x.borrow_date,x.expected_return_date,effectiveStatus(x),daysOverdue(x),x.remarks]));downloadCSV('fullbright-transactions-'+today()+'.csv',rows)}}
 function printReports(){const d=window.__filteredReportData||window.__reportData||{};const rows=(d.borrowings||[]).map(r=>`<tr><td>#${r.borrowing_id}</td><td>${esc([r.borrower?.first_name,r.borrower?.last_name].filter(Boolean).join(' '))}</td><td>${esc(r.expected_return_date)}</td><td>${esc(effectiveStatus(r))}</td><td>${isOverdue(r)?daysOverdue(r)+' day(s)':'—'}</td></tr>`).join('');const w=window.open('','_blank');if(!w)return toast('Please allow pop-ups to print reports.',true);w.document.write(`<html><head><title>Fullbright Borrowing Report</title><style>body{font:13px Arial;padding:25px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #aaa;padding:7px;text-align:left}h1{margin-bottom:4px}</style></head><body><h1>Fullbright College</h1><h2>Borrowing and Overdue Report</h2><p>Generated: ${new Date().toLocaleString()}</p><table><thead><tr><th>Request</th><th>Borrower</th><th>Due date</th><th>Status</th><th>Overdue</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()}
 
-async function profilePage(){$('#content').innerHTML=`<div class="card form-card"><h3 class="section-title">My Profile</h3><div class="profile-grid"><div class="profile-item"><span>Email</span>${esc(profile.email)}</div><div class="profile-item"><span>Role</span>${badge(role())}</div><div class="profile-item"><span>Account status</span>${badge(profile.user_status)}</div><div class="profile-item"><span>Maximum borrowing period</span>${MAX_BORROW_DAYS} days</div></div><form class="form" id="myProfileForm" style="margin-top:18px"><div class="grid2"><div class="field"><label>First name</label><input id="myFirstName" required value="${esc(profile.first_name)}"></div><div class="field"><label>Last name</label><input id="myLastName" required value="${esc(profile.last_name)}"></div></div><div class="grid2"><div class="field"><label>Student / Employee ID</label><input id="myEmployeeNo" required value="${esc(profile.employee_no)}"></div><div class="field"><label>Section / Year</label><input id="myCourse" value="${esc([profile.course_program,profile.year_level].filter(Boolean).join(' '))}"></div></div><div class="actions"><button class="btn primary">Save Profile</button><button type="button" class="btn" onclick="sendPasswordReset()">Send Password Reset Email</button></div></form></div>`;$('#myProfileForm').onsubmit=async e=>{e.preventDefault();const {error}=await sb.rpc('update_my_profile',{p_first_name:$('#myFirstName').value.trim(),p_last_name:$('#myLastName').value.trim(),p_employee_no:$('#myEmployeeNo').value.trim(),p_course_program:$('#myCourse').value.trim()||null});if(error)return toast(error.message,true);toast('Profile updated');await getProfile();showApp()}}
+async function profilePage(){$('#content').innerHTML=`<div class="card form-card"><h3 class="section-title">My Profile</h3><div class="profile-grid"><div class="profile-item"><span>Email</span>${esc(profile.email)}</div><div class="profile-item"><span>Role</span>${badge(role())}</div><div class="profile-item"><span>Account status</span>${badge(profile.user_status)}</div><div class="profile-item"><span>Maximum borrowing period</span>${MAX_BORROW_DAYS} days</div></div><form class="form" id="myProfileForm" style="margin-top:18px"><div class="grid2"><div class="field"><label>First name</label><input id="myFirstName" required value="${esc(profile.first_name)}"></div><div class="field"><label>Last name</label><input id="myLastName" required value="${esc(profile.last_name)}"></div></div><div class="grid2"><div class="field"><label>Student / Employee ID</label><input id="myEmployeeNo" required value="${esc(profile.employee_no)}"></div><div class="field"><label>Section / Year</label><input id="myCourse" value="${esc([profile.course_program,profile.year_level].filter(Boolean).join(' '))}"></div></div><div class="actions"><button class="btn primary">Save Profile</button></div></form></div>`;$('#myProfileForm').onsubmit=async e=>{e.preventDefault();const {error}=await sb.rpc('update_my_profile',{p_first_name:$('#myFirstName').value.trim(),p_last_name:$('#myLastName').value.trim(),p_employee_no:$('#myEmployeeNo').value.trim(),p_course_program:$('#myCourse').value.trim()||null});if(error)return toast(error.message,true);toast('Profile updated');await getProfile();showApp()}}
 
 async function refreshDueNotifications(){if(!profile)return;const {error}=await sb.rpc('refresh_borrowing_notifications');if(error && !String(error.message||'').includes('Could not find the function'))console.warn('Notifications not refreshed:',error.message)}
 async function updateNotifications(){
