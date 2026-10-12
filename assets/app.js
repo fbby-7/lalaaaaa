@@ -55,13 +55,39 @@ $('#signupForm').onsubmit=async e=>{
   toast('Account created successfully!');await start();
 setInterval(()=>{if(profile){refreshDueNotifications().finally(updateNotifications)}},5*60*1000);
 };
-async function sendPasswordReset(){
-  const {data:{user},error:userError}=await sb.auth.getUser();
-  if(userError||!user?.email)return toast('Could not find the email for your signed-in account. Please sign in again.',true);
-  const redirectTo=`${window.location.origin}/reset-password.html`;
-  const {error}=await sb.auth.resetPasswordForEmail(user.email,{redirectTo});
-  if(error)return toast(error.message,true);
-  toast(`Password reset instructions sent to ${user.email}. Check your inbox.`);
+
+async function sendPasswordReset(source = 'profile') {
+  let email = '';
+
+  if (source === 'login') {
+    email = document.getElementById('loginEmail')?.value.trim() || '';
+
+    if (!email) {
+      return toast('Enter your account email first.', true);
+    }
+  } else {
+    const { data: { user }, error } = await sb.auth.getUser();
+
+    if (error || !user?.email) {
+      return toast('Please sign in again and retry.', true);
+    }
+
+    email = user.email;
+  }
+
+  const redirectTo =
+    `${window.location.origin}/reset-password.html`;
+
+  const { error } = await sb.auth.resetPasswordForEmail(
+    email,
+    { redirectTo }
+  );
+
+  if (error) {
+    return toast(error.message, true);
+  }
+
+  toast('If an account exists for this email, password reset instructions will be sent. Check your inbox.');
 }
 function showPasswordRecoveryForm(){
   let backdrop=document.getElementById('passwordRecoveryBackdrop');
