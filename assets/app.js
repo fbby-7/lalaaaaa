@@ -275,5 +275,5 @@ async function recordFollowup(id,button){if(!isStaff())return toast('Only staff 
 
 async function markOverdue(){return refreshDueNotifications()}
 start();
-setInterval(()=>{if(profile){refreshDueNotifications().finally(updateNotifications)}},5*60*1000);
+setInterval(()=>{if(profile){refreshDueNotifications().finally(updateNotifications)}},5*60*1000); 
 
