@@ -182,11 +182,51 @@ async function addEquipmentQuantity(equipmentId){
 }
 
 function equipmentImage(unit){
-  const label=`${unit.equipment_name||''} ${unit.category_name||''}`.toLowerCase();
-  if(/laptop|computer|notebook|pc|monitor/.test(label))return 'assets/equipment-laptop.svg';
-  if(/projector|display|screen/.test(label))return 'assets/equipment-projector.svg';
-  if(/camera|photo|video/.test(label))return 'assets/equipment-camera.svg';
-  if(/speaker|microphone|audio|sound|amplifier/.test(label))return 'assets/equipment-audio.svg';
+  const label=`${unit.equipment_name||''} ${unit.category_name||''} ${unit.brand||''} ${unit.model||''}`.toLowerCase();
+  const images=[
+    [/laptop|computer|notebook|thinkpad|pc|monitor/,'Laptop_Presentation_Gear/Laptop_Lenovo_ThinkPad_E14.png'],
+    [/camera|canon|photo|video/,'Laptop_Presentation_Gear/Camera_Canon_EOS_250D.png'],
+    [/projector/,'Laptop_Presentation_Gear/Projector_Epson_EB-X06.png'],
+    [/projection screen|portable screen/,'Presentation_and_Audio/Portable_Projection_Screen.png'],
+    [/wireless microphone|shure/,'Laptop_Presentation_Gear/Wireless_Microphone_Shure_BLX24.png'],
+    [/wired microphone/,'Presentation_and_Audio/Wired_Microphone.png'],
+    [/microphone|audio|sound/,'Presentation_and_Audio/Wired_Microphone.png'],
+    [/speaker/,'Presentation_and_Audio/Portable_Speaker.png'],
+    [/external hard drive|ssd|storage/,'Computer_Accessories_and_Storage/External_Hard_Drive_or_SSD.png'],
+    [/usb-c adapter|usb c adapter/,'Computer_Accessories_and_Storage/USB-C_Adapter.png'],
+    [/hdmi adapter/,'Computer_Accessories_and_Storage/HDMI_Adapter.png'],
+    [/hdmi cable/,'Computer_Accessories_and_Storage/HDMI_Cable.png'],
+    [/usb hub/,'Computer_Accessories_and_Storage/USB_Hub.png'],
+    [/network switch|cisco/,'Networking/Network_Switch_Cisco_CBS110-8T-D.png'],
+    [/router/,'Networking/Router.png'],
+    [/wireless access point|access point/,'Networking/Wireless_Access_Point.png'],
+    [/ethernet cable|cat5e|cat6/,'Networking/Ethernet_Cables_Cat5e_Cat6.png'],
+    [/network cable tester|cable tester/,'Networking/Network_Cable_Tester.png'],
+    [/rj45 crimp/,'Networking/RJ45_Crimping_Tool.png'],
+    [/punch.down/,'Networking/Punch-Down_Tool.png'],
+    [/cable stripper|cable cutter/,'Networking/Cable_Stripper_and_Cutter.png'],
+    [/whiteboard/,'Classroom_and_Office/Whiteboard.png'],
+    [/bulletin board/,'Classroom_and_Office/Bulletin_Board.png'],
+    [/folding table/,'Classroom_and_Office/Folding_Table.png'],
+    [/portable chair|chair/,'Classroom_and_Office/Portable_Chairs.png'],
+    [/paper cutter/,'Classroom_and_Office/Paper_Cutter.png'],
+    [/stapler/,'Classroom_and_Office/Stapler.png'],
+    [/extension cord/,'Classroom_and_Office/Extension_Cord.png'],
+    [/soldering station/,'Electronics_and_Soldering/Soldering_Station.png'],
+    [/soldering iron stand|iron stand/,'Electronics_and_Soldering/Soldering_Iron_Stand.png'],
+    [/electronic component|component kit|resistor|capacitor/,'Electronics_and_Soldering/Electronic_Component_Kit.png'],
+    [/heat gun/,'Electronics_and_Soldering/Heat_Gun.png'],
+    [/wire stripper/,'Electronics_and_Soldering/Wire_Stripper.png'],
+    [/hot glue gun/,'Hand_Tools_and_Workshop/Hot_Glue_Gun.png'],
+    [/hand drill|drill/,'Hand_Tools_and_Workshop/Hand_Drill.png'],
+    [/precision screwdriver/,'Hand_Tools_and_Workshop/Precision_Screwdriver_Set.png'],
+    [/screwdriver/,'Hand_Tools_and_Workshop/Screwdriver_Set.png'],
+    [/pliers/,'Hand_Tools_and_Workshop/Pliers_Set.png'],
+    [/clamp/,'Hand_Tools_and_Workshop/Clamps.png'],
+    [/measuring tool|measure/,'Hand_Tools_and_Workshop/Measuring_Tools.png']
+  ];
+  const match=images.find(([pattern])=>pattern.test(label));
+  if(match)return 'assets/equipment-images/'+match[1];
   return 'assets/equipment-generic.svg';
 }
 
