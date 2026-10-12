@@ -1,7 +1,9 @@
 /* Fullbright College Equipment Borrowing System */
 const SUPABASE_URL = 'https://uaxfzmtpjcfwfoqhgfih.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_hsippBvYrIczvzTtI8cR2A_dV6eqcUj';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
+});
 const MAX_BORROW_DAYS = 7;
 const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
 let me=null, profile=null, charts=[];
@@ -75,8 +77,7 @@ async function sendPasswordReset(source = 'profile') {
     email = user.email;
   }
 
-  const redirectTo =
-    `${window.location.origin}/reset-password.html`;
+  const redirectTo = new URL('/reset-password.html', window.location.origin).toString();
 
   const { error } = await sb.auth.resetPasswordForEmail(
     email,
@@ -119,7 +120,20 @@ function showPasswordRecoveryForm(){
 $('#logout').onclick=async()=>{await sb.auth.signOut();me=null;profile=null;showAuth()};
 $$('.nav').forEach(b=>b.onclick=()=>{$$('.nav').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#notificationPanel').classList.add('hidden');loadPage(b.dataset.page)});
 $('#notificationBtn').onclick=()=>{const panel=$('#notificationPanel');panel.classList.toggle('hidden');$('#notificationBtn').setAttribute('aria-expanded',String(!panel.classList.contains('hidden')))};
-sb.auth.onAuthStateChange(async(event)=>{if(event==='PASSWORD_RECOVERY'){showPasswordRecoveryForm();return}if(me===null)await start()});
+sb.auth.onAuthStateChange(async (event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    // Recovery links sometimes land on /# instead of the standalone page because
+    // of an old Supabase redirect setting. Move the recovery session to the page.
+    const target = new URL('/reset-password.html', window.location.origin);
+    target.search = window.location.search;
+    target.hash = window.location.hash;
+    if (window.location.pathname !== '/reset-password.html') {
+      window.location.replace(target.toString());
+    }
+    return;
+  }
+  if (me === null) await start();
+});
 async function start(){try{await getProfile();if(profile)showApp();else showAuth()}catch(e){showAuth();toast(e.message,true)}}
 
 async function loadPage(page){
@@ -275,5 +289,5 @@ async function recordFollowup(id,button){if(!isStaff())return toast('Only staff 
 
 async function markOverdue(){return refreshDueNotifications()}
 start();
-setInterval(()=>{if(profile){refreshDueNotifications().finally(updateNotifications)}},5*60*1000); 
+setInterval(()=>{if(profile){refreshDueNotifications().finally(updateNotifications)}},5*60*1000);
 
